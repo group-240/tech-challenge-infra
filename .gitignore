@@ -1,0 +1,59 @@
+# ========================
+# Terraform
+# ========================
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+*.tfplan
+.terraformrc
+terraform.rc
+
+# ========================
+# OS Generated
+# ========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ========================
+# IDE / Editor
+# ========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ========================
+# Logs
+# ========================
+*.log
+logs/
+
+# ========================
+# Secrets (NEVER commit)
+# ========================
+*.pem
+*.key
+.env
+.env.*
+secrets.yml
+secrets.yaml
