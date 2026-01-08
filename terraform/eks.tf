@@ -1,53 +1,11 @@
-# EKS Cluster IAM Role
-resource "aws_iam_role" "eks_cluster" {
-  name = "tech-challenge-eks-cluster-role"
+# ============================================
+# EKS para AWS Academy Learner Lab
+# Usa roles pré-existentes (LabRole)
+# ============================================
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "eks.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.eks_cluster.name
-}
-
-# EKS Node Group IAM Role
-resource "aws_iam_role" "eks_nodes" {
-  name = "tech-challenge-eks-node-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.eks_nodes.name
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.eks_nodes.name
-}
-
-resource "aws_iam_role_policy_attachment" "eks_container_registry" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.eks_nodes.name
+# Data source para LabRole pré-existente do Learner Lab
+data "aws_iam_role" "lab_role" {
+  name = "LabRole"
 }
 
 # EKS Cluster Security Group
@@ -55,6 +13,13 @@ resource "aws_security_group" "eks_cluster" {
   name        = "tech-challenge-eks-cluster-sg"
   description = "Security group for EKS cluster"
   vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   egress {
     from_port   = 0
@@ -68,10 +33,10 @@ resource "aws_security_group" "eks_cluster" {
   }
 }
 
-# EKS Cluster
+# EKS Cluster - Usando LabRole do Learner Lab
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
-  role_arn = aws_iam_role.eks_cluster.arn
+  role_arn = data.aws_iam_role.lab_role.arn
   version  = "1.29"
 
   vpc_config {
@@ -80,24 +45,23 @@ resource "aws_eks_cluster" "main" {
     endpoint_private_access = true
     endpoint_public_access  = true
   }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_cluster_policy
-  ]
 }
 
-# EKS Node Group
+# EKS Node Group - Usando LabRole e limitado a 2 nodes
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "tech-challenge-node-group"
-  node_role_arn   = aws_iam_role.eks_nodes.arn
+  node_role_arn   = data.aws_iam_role.lab_role.arn
   subnet_ids      = aws_subnet.private[*].id
 
-  instance_types = ["t3.medium"]
+  # Learner Lab: Apenas t3.small, t3.medium, t3.large permitidos
+  instance_types = ["t3.small"]
 
+  # Learner Lab: Limite de 9 instâncias EC2 no total
+  # Mantendo 2 nodes para não exceder limites
   scaling_config {
     desired_size = 2
-    max_size     = 4
+    max_size     = 2
     min_size     = 1
   }
 
@@ -105,9 +69,11 @@ resource "aws_eks_node_group" "main" {
     max_unavailable = 1
   }
 
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_worker_node_policy,
-    aws_iam_role_policy_attachment.eks_cni_policy,
-    aws_iam_role_policy_attachment.eks_container_registry,
-  ]
+  labels = {
+    environment = "tech-challenge"
+  }
+
+  tags = {
+    Name = "tech-challenge-node-group"
+  }
 }
