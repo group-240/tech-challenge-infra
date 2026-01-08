@@ -19,6 +19,7 @@ Repositório responsável pela infraestrutura base da AWS.
 
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
+- `AWS_SESSION_TOKEN` (obrigatório para AWS Academy Learner Lab)
 
 ## Ordem de Execução
 
