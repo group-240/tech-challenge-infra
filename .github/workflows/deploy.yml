@@ -80,6 +80,26 @@ jobs:
       - name: Terraform Init
         run: terraform init -input=false
 
+      - name: Configure kubectl for state operations
+        run: |
+          # Tentar configurar kubectl para operações com state do Kubernetes
+          if aws eks describe-cluster --name tech-challenge-cluster --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "🔧 Configurando kubectl..."
+            aws eks update-kubeconfig --name tech-challenge-cluster --region ${{ env.AWS_REGION }}
+          else
+            echo "⚠️ Cluster não existe ainda"
+          fi
+
+      - name: Fix Kubernetes Provider Identity Issues
+        run: |
+          echo "🔧 Removendo recursos com problemas de identidade do state..."
+          # Remover recursos Kubernetes que têm problema de "Unexpected Identity Change"
+          terraform state rm kubernetes_deployment.ingress_nginx_controller 2>/dev/null || echo "Resource not in state or already removed"
+          terraform state rm kubernetes_service.ingress_nginx_controller 2>/dev/null || echo "Resource not in state or already removed"
+          terraform state rm kubernetes_service.ingress_nginx_controller_admission 2>/dev/null || echo "Resource not in state or already removed"
+          echo "✅ State cleanup completed"
+        continue-on-error: true
+
       - name: Terraform Validate
         run: terraform validate -no-color
 
@@ -172,6 +192,16 @@ jobs:
           else
             echo "⚠️ Cluster ainda não existe, kubectl será configurado após criação"
           fi
+
+      - name: Fix Kubernetes Provider Identity Issues
+        run: |
+          echo "🔧 Removendo recursos com problemas de identidade do state..."
+          # Remover recursos Kubernetes que têm problema de "Unexpected Identity Change"
+          terraform state rm kubernetes_deployment.ingress_nginx_controller 2>/dev/null || echo "Resource not in state or already removed"
+          terraform state rm kubernetes_service.ingress_nginx_controller 2>/dev/null || echo "Resource not in state or already removed"
+          terraform state rm kubernetes_service.ingress_nginx_controller_admission 2>/dev/null || echo "Resource not in state or already removed"
+          echo "✅ State cleanup completed"
+        continue-on-error: true
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
