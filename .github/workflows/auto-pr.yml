@@ -1,0 +1,66 @@
+name: "Auto Create PR"
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check if PR exists and create if not
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          REPO="${GITHUB_REPOSITORY}"
+          
+          echo "🔍 Checking for existing PR from '$BRANCH_NAME' to 'main'..."
+          
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --base main --state open --json number --jq '.[0].number')
+          
+          if [ -n "$EXISTING_PR" ]; then
+            echo "✅ PR #$EXISTING_PR already exists for branch '$BRANCH_NAME' → main"
+            echo "🔗 https://github.com/$REPO/pull/$EXISTING_PR"
+          else
+            echo "📝 No existing PR found. Creating new PR..."
+            
+            # Get last commit message for PR title
+            COMMIT_MSG=$(git log -1 --pretty=%s)
+            
+            # Create PR
+            PR_URL=$(gh pr create \
+              --base main \
+              --head "$BRANCH_NAME" \
+              --title "$COMMIT_MSG" \
+              --body "## Auto-generated PR
+
+This PR was automatically created from branch \`$BRANCH_NAME\`.
+
+### Last Commit
+\`\`\`
+$(git log -1 --pretty=format:'%h - %s (%an, %ar)')
+\`\`\`
+
+### Changes
+$(git log main..$BRANCH_NAME --oneline 2>/dev/null || echo 'New branch')
+" \
+              2>&1) || true
+            
+            if echo "$PR_URL" | grep -q "github.com"; then
+              echo "✅ PR created successfully!"
+              echo "🔗 $PR_URL"
+            else
+              echo "⚠️ Could not create PR. It may already exist or there's an error:"
+              echo "$PR_URL"
+            fi
+          fi
