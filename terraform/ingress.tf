@@ -26,6 +26,190 @@ resource "kubernetes_service_account" "ingress_nginx" {
   }
 }
 
+# ============================================
+# RBAC para NGINX Ingress Controller
+# ============================================
+
+# ClusterRole com permissões necessárias
+resource "kubernetes_cluster_role" "ingress_nginx" {
+  metadata {
+    name = "ingress-nginx"
+    labels = {
+      "app.kubernetes.io/name" = "ingress-nginx"
+    }
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["configmaps", "endpoints", "nodes", "pods", "secrets", "namespaces"]
+    verbs      = ["list", "watch"]
+  }
+
+  rule {
+    api_groups = ["coordination.k8s.io"]
+    resources  = ["leases"]
+    verbs      = ["list", "watch"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["nodes"]
+    verbs      = ["get"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["services"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingresses"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["events"]
+    verbs      = ["create", "patch"]
+  }
+
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingresses/status"]
+    verbs      = ["update"]
+  }
+
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingressclasses"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["discovery.k8s.io"]
+    resources  = ["endpointslices"]
+    verbs      = ["list", "watch", "get"]
+  }
+}
+
+# ClusterRoleBinding
+resource "kubernetes_cluster_role_binding" "ingress_nginx" {
+  metadata {
+    name = "ingress-nginx"
+    labels = {
+      "app.kubernetes.io/name" = "ingress-nginx"
+    }
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role.ingress_nginx.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.ingress_nginx.metadata[0].name
+    namespace = kubernetes_namespace.ingress_nginx.metadata[0].name
+  }
+}
+
+# Role para o namespace ingress-nginx
+resource "kubernetes_role" "ingress_nginx" {
+  metadata {
+    name      = "ingress-nginx"
+    namespace = kubernetes_namespace.ingress_nginx.metadata[0].name
+    labels = {
+      "app.kubernetes.io/name" = "ingress-nginx"
+    }
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["namespaces"]
+    verbs      = ["get"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["configmaps", "pods", "secrets", "endpoints"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["services"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingresses"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingresses/status"]
+    verbs      = ["update"]
+  }
+
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingressclasses"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["coordination.k8s.io"]
+    resources  = ["leases"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["configmaps"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["events"]
+    verbs      = ["create", "patch"]
+  }
+
+  rule {
+    api_groups = ["discovery.k8s.io"]
+    resources  = ["endpointslices"]
+    verbs      = ["list", "watch", "get"]
+  }
+}
+
+# RoleBinding para o namespace ingress-nginx
+resource "kubernetes_role_binding" "ingress_nginx" {
+  metadata {
+    name      = "ingress-nginx"
+    namespace = kubernetes_namespace.ingress_nginx.metadata[0].name
+    labels = {
+      "app.kubernetes.io/name" = "ingress-nginx"
+    }
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.ingress_nginx.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.ingress_nginx.metadata[0].name
+    namespace = kubernetes_namespace.ingress_nginx.metadata[0].name
+  }
+}
+
 # ConfigMap para configurações do NGINX
 resource "kubernetes_config_map" "ingress_nginx" {
   metadata {
@@ -52,8 +236,21 @@ resource "kubernetes_deployment" "ingress_nginx_controller" {
     }
   }
 
+  # Timeout maior para aguardar o pod ficar pronto
+  timeouts {
+    create = "10m"
+    update = "10m"
+  }
+
+  # Dependências explícitas de RBAC
+  depends_on = [
+    kubernetes_cluster_role_binding.ingress_nginx,
+    kubernetes_role_binding.ingress_nginx
+  ]
+
   spec {
-    replicas = 2
+    # Reduzido para 1 replica (AWS Lab tem recursos limitados)
+    replicas = 1
 
     selector {
       match_labels = {
