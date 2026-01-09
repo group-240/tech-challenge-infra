@@ -46,8 +46,18 @@ provider "kubernetes" {
   token                  = data.aws_eks_cluster_auth.cluster.token
 }
 
-# Create namespace for all microservices
+# Check if namespace already exists
+data "kubernetes_namespace" "existing" {
+  metadata {
+    name = "tech-challenge"
+  }
+  depends_on = [aws_eks_node_group.main]
+}
+
+# Create namespace only if it doesn't exist (using lifecycle to handle existing)
 resource "kubernetes_namespace" "tech_challenge" {
+  count = can(data.kubernetes_namespace.existing.metadata[0].name) ? 0 : 1
+  
   metadata {
     name = "tech-challenge"
     labels = {
