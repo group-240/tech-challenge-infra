@@ -68,3 +68,40 @@ output "aws_region" {
   description = "AWS Region"
   value       = var.aws_region
 }
+
+# Cognito Outputs
+output "cognito_user_pool_id" {
+  description = "Cognito User Pool ID"
+  value       = aws_cognito_user_pool.main.id
+}
+
+output "cognito_user_pool_arn" {
+  description = "Cognito User Pool ARN"
+  value       = aws_cognito_user_pool.main.arn
+}
+
+output "cognito_user_pool_client_id" {
+  description = "Cognito User Pool Client ID"
+  value       = aws_cognito_user_pool_client.main.id
+}
+
+output "cognito_user_pool_domain" {
+  description = "Cognito User Pool Domain"
+  value       = aws_cognito_user_pool_domain.main.domain
+}
+
+# NLB Outputs
+output "nlb_arn" {
+  description = "Network Load Balancer ARN"
+  value       = aws_lb.main.arn
+}
+
+output "nlb_dns_name" {
+  description = "Network Load Balancer DNS name"
+  value       = aws_lb.main.dns_name
+}
+
+output "nlb_target_group_arn" {
+  description = "NLB Target Group ARN for EKS services"
+  value       = aws_lb_target_group.eks_services.arn
+}
