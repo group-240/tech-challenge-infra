@@ -242,6 +242,16 @@ resource "kubernetes_deployment" "ingress_nginx_controller" {
     update = "10m"
   }
 
+  # Lifecycle para evitar erro "Unexpected Identity Change" do provider Kubernetes
+  # Este erro ocorre quando o recurso já existe no cluster com identidade diferente
+  lifecycle {
+    ignore_changes = [
+      metadata[0].resource_version,
+      metadata[0].uid,
+      metadata[0].generation,
+    ]
+  }
+
   # Dependências explícitas de RBAC
   depends_on = [
     kubernetes_cluster_role_binding.ingress_nginx,
