@@ -83,6 +83,12 @@ resource "aws_lb_target_group" "nginx_ingress" {
     interval            = 30
   }
 
+  # Criar novo target group antes de deletar o antigo
+  # Evita erro "target group is in use by a listener"
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = {
     Name = "tech-challenge-nginx-tg"
   }
