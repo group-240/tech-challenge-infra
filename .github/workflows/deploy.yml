@@ -92,12 +92,35 @@ jobs:
 
       - name: Fix Kubernetes Provider Identity Issues
         run: |
-          echo "🔧 Removendo recursos com problemas de identidade do state..."
-          # Remover recursos Kubernetes que têm problema de "Unexpected Identity Change"
-          terraform state rm kubernetes_deployment.ingress_nginx_controller 2>/dev/null || echo "Resource not in state or already removed"
-          terraform state rm kubernetes_service.ingress_nginx_controller 2>/dev/null || echo "Resource not in state or already removed"
-          terraform state rm kubernetes_service.ingress_nginx_controller_admission 2>/dev/null || echo "Resource not in state or already removed"
-          echo "✅ State cleanup completed"
+          echo "🔧 Sincronizando recursos Kubernetes com o state do Terraform..."
+          
+          # Verificar se kubectl está configurado
+          if ! kubectl cluster-info 2>/dev/null; then
+            echo "⚠️ kubectl não configurado, pulando sincronização"
+            exit 0
+          fi
+          
+          NAMESPACE="ingress-nginx"
+          
+          # Verificar se o deployment existe no cluster
+          if kubectl get deployment ingress-nginx-controller -n $NAMESPACE 2>/dev/null; then
+            echo "📦 Deployment existe no cluster, verificando state..."
+            if ! terraform state show kubernetes_deployment.ingress_nginx_controller 2>/dev/null; then
+              echo "🔄 Importando deployment para o state..."
+              terraform import kubernetes_deployment.ingress_nginx_controller "$NAMESPACE/ingress-nginx-controller" || true
+            fi
+          fi
+          
+          # Verificar se o service existe no cluster
+          if kubectl get service ingress-nginx-controller -n $NAMESPACE 2>/dev/null; then
+            echo "📦 Service existe no cluster, verificando state..."
+            if ! terraform state show kubernetes_service.ingress_nginx_controller 2>/dev/null; then
+              echo "🔄 Importando service para o state..."
+              terraform import kubernetes_service.ingress_nginx_controller "$NAMESPACE/ingress-nginx-controller" || true
+            fi
+          fi
+          
+          echo "✅ Sincronização concluída"
         continue-on-error: true
 
       - name: Terraform Validate
@@ -195,12 +218,30 @@ jobs:
 
       - name: Fix Kubernetes Provider Identity Issues
         run: |
-          echo "🔧 Removendo recursos com problemas de identidade do state..."
-          # Remover recursos Kubernetes que têm problema de "Unexpected Identity Change"
-          terraform state rm kubernetes_deployment.ingress_nginx_controller 2>/dev/null || echo "Resource not in state or already removed"
-          terraform state rm kubernetes_service.ingress_nginx_controller 2>/dev/null || echo "Resource not in state or already removed"
-          terraform state rm kubernetes_service.ingress_nginx_controller_admission 2>/dev/null || echo "Resource not in state or already removed"
-          echo "✅ State cleanup completed"
+          echo "🔧 Sincronizando recursos Kubernetes com o state do Terraform..."
+          
+          # Verificar se os recursos existem no cluster e importar se necessário
+          NAMESPACE="ingress-nginx"
+          
+          # Verificar se o deployment existe no cluster
+          if kubectl get deployment ingress-nginx-controller -n $NAMESPACE 2>/dev/null; then
+            echo "📦 Deployment existe no cluster, verificando state..."
+            if ! terraform state show kubernetes_deployment.ingress_nginx_controller 2>/dev/null; then
+              echo "🔄 Importando deployment para o state..."
+              terraform import kubernetes_deployment.ingress_nginx_controller "$NAMESPACE/ingress-nginx-controller" || true
+            fi
+          fi
+          
+          # Verificar se o service existe no cluster
+          if kubectl get service ingress-nginx-controller -n $NAMESPACE 2>/dev/null; then
+            echo "📦 Service existe no cluster, verificando state..."
+            if ! terraform state show kubernetes_service.ingress_nginx_controller 2>/dev/null; then
+              echo "🔄 Importando service para o state..."
+              terraform import kubernetes_service.ingress_nginx_controller "$NAMESPACE/ingress-nginx-controller" || true
+            fi
+          fi
+          
+          echo "✅ Sincronização concluída"
         continue-on-error: true
 
       - name: Terraform Apply
