@@ -1,0 +1,64 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm destruction of ALL infrastructure'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'destroy'
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+    - name: ⚠️ Warning
+      run: |
+        echo "⚠️ WARNING: This will DESTROY all infrastructure!"
+        echo "This includes: VPC, EKS, ECR, Cognito, NLB"
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Init
+      run: terraform init -input=false
+
+    - name: Terraform Destroy
+      run: terraform destroy -auto-approve -input=false
+
+    - name: ✅ Destruction Complete
+      run: |
+        echo "✅ Infrastructure destruction complete"
+        echo "All resources have been removed"
+
+  cancel:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm != 'destroy'
+    steps:
+    - name: ❌ Cancelled
+      run: |
+        echo "❌ Destruction cancelled"
+        echo "You must type 'destroy' to confirm"
+        exit 1
