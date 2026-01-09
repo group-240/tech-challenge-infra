@@ -57,6 +57,12 @@ output "ecr_payments_url" {
   value       = aws_ecr_repository.payments.repository_url
 }
 
+# Kubernetes Namespace
+output "kubernetes_namespace" {
+  description = "Kubernetes namespace for all microservices"
+  value       = kubernetes_namespace.tech_challenge.metadata[0].name
+}
+
 # AWS Account Info
 output "aws_region" {
   description = "AWS Region"

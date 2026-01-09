@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.36"
+    }
   }
 
   backend "s3" {
@@ -28,4 +32,29 @@ provider "aws" {
       ManagedBy   = "Terraform"
     }
   }
+}
+
+# EKS cluster auth for Kubernetes provider
+data "aws_eks_cluster_auth" "cluster" {
+  name = aws_eks_cluster.main.name
+}
+
+# Kubernetes provider configuration
+provider "kubernetes" {
+  host                   = aws_eks_cluster.main.endpoint
+  cluster_ca_certificate = base64decode(aws_eks_cluster.main.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+}
+
+# Create namespace for all microservices
+resource "kubernetes_namespace" "tech_challenge" {
+  metadata {
+    name = "tech-challenge"
+    labels = {
+      name        = "tech-challenge"
+      environment = var.environment
+    }
+  }
+
+  depends_on = [aws_eks_node_group.main]
 }
