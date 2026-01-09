@@ -163,5 +163,49 @@ jobs:
       - name: Terraform Init
         run: terraform init -input=false
 
+      - name: Configure kubectl
+        run: |
+          # Verificar se o cluster existe
+          if aws eks describe-cluster --name tech-challenge-cluster --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "🔧 Configurando kubectl para o cluster existente..."
+            aws eks update-kubeconfig --name tech-challenge-cluster --region ${{ env.AWS_REGION }}
+          else
+            echo "⚠️ Cluster ainda não existe, kubectl será configurado após criação"
+          fi
+
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false
+
+      - name: Register EKS Nodes to Target Group
+        if: success()
+        run: |
+          echo "🎯 Registrando nodes do EKS no Target Group..."
+          
+          # Obter ARN do target group
+          TG_ARN=$(terraform output -raw nlb_target_group_arn 2>/dev/null || echo "")
+          
+          if [ -z "$TG_ARN" ]; then
+            echo "⚠️ Target Group ARN não encontrado, pulando registro"
+            exit 0
+          fi
+          
+          # Obter IDs das instâncias do EKS
+          INSTANCE_IDS=$(aws ec2 describe-instances \
+            --filters "Name=tag:eks:cluster-name,Values=tech-challenge-cluster" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[*].Instances[*].InstanceId' \
+            --output text)
+          
+          if [ -z "$INSTANCE_IDS" ]; then
+            echo "⚠️ Nenhuma instância EKS encontrada"
+            exit 0
+          fi
+          
+          # Registrar cada instância
+          for INSTANCE_ID in $INSTANCE_IDS; do
+            echo "Registrando $INSTANCE_ID..."
+            aws elbv2 register-targets \
+              --target-group-arn "$TG_ARN" \
+              --targets Id=$INSTANCE_ID,Port=30080 || true
+          done
+          
+          echo "✅ Registro de targets concluído"
