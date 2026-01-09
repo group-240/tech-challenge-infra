@@ -422,12 +422,14 @@ resource "kubernetes_ingress_class" "nginx" {
 
 # ============================================
 # Ingress para rotear tráfego para os serviços
+# NOTA: Os serviços referenciados são criados pelos repos dos microserviços
+# Este Ingress será criado após o namespace existir
 # ============================================
 
 resource "kubernetes_ingress_v1" "tech_challenge" {
   metadata {
     name      = "tech-challenge-ingress"
-    namespace = "tech-challenge"
+    namespace = kubernetes_namespace.tech_challenge.metadata[0].name  # Usa referência, não string!
     annotations = {
       "kubernetes.io/ingress.class"                = "nginx"
       "nginx.ingress.kubernetes.io/rewrite-target" = "/api$1"
@@ -447,7 +449,7 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
           path_type = "Prefix"
           backend {
             service {
-              name = "orders-service"
+              name = "orders"
               port {
                 number = 80
               }
@@ -461,7 +463,7 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
           path_type = "Prefix"
           backend {
             service {
-              name = "orders-service"
+              name = "orders"
               port {
                 number = 80
               }
@@ -475,7 +477,7 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
           path_type = "Prefix"
           backend {
             service {
-              name = "orders-service"
+              name = "orders"
               port {
                 number = 80
               }
@@ -489,7 +491,7 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
           path_type = "Prefix"
           backend {
             service {
-              name = "orders-service"
+              name = "orders"
               port {
                 number = 80
               }
@@ -503,7 +505,7 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
           path_type = "Prefix"
           backend {
             service {
-              name = "orders-service"
+              name = "orders"
               port {
                 number = 80
               }
@@ -517,7 +519,7 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
           path_type = "Prefix"
           backend {
             service {
-              name = "customer-service"
+              name = "customer"
               port {
                 number = 80
               }
@@ -531,7 +533,7 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
           path_type = "Prefix"
           backend {
             service {
-              name = "payments-service"
+              name = "payments"
               port {
                 number = 80
               }
@@ -542,7 +544,9 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
     }
   }
 
+  # DEPENDÊNCIAS EXPLÍCITAS - Garante ordem correta de criação
   depends_on = [
+    kubernetes_namespace.tech_challenge,  # Namespace deve existir primeiro!
     kubernetes_deployment.ingress_nginx_controller,
     kubernetes_service.ingress_nginx_controller
   ]

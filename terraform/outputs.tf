@@ -60,7 +60,13 @@ output "ecr_payments_url" {
 # Kubernetes Namespace
 output "kubernetes_namespace" {
   description = "Kubernetes namespace for all microservices"
-  value       = "tech-challenge"
+  value       = kubernetes_namespace.tech_challenge.metadata[0].name
+}
+
+output "namespace_ready" {
+  description = "Flag indicating namespace was created and is ready"
+  value       = true
+  depends_on  = [kubernetes_namespace.tech_challenge]
 }
 
 # AWS Account Info

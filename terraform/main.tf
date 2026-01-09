@@ -47,24 +47,30 @@ provider "kubernetes" {
   }
 }
 
-# Check if namespace already exists
-data "kubernetes_namespace" "existing" {
-  metadata {
-    name = "tech-challenge"
-  }
-  depends_on = [aws_eks_node_group.main]
-}
-
-# Create namespace only if it doesn't exist (using lifecycle to handle existing)
+# ============================================
+# Namespace para aplicações
+# IMPORTANTE: Este é o ÚNICO lugar que cria o namespace tech-challenge
+# Os microserviços (customer, orders, payments) devem usar data source
+# ============================================
 resource "kubernetes_namespace" "tech_challenge" {
-  count = can(data.kubernetes_namespace.existing.metadata[0].name) ? 0 : 1
-  
   metadata {
     name = "tech-challenge"
     labels = {
       name        = "tech-challenge"
       environment = var.environment
+      managed-by  = "terraform"
+      repo        = "tech-challenge-infra"
     }
+  }
+
+  # Previne recriação se já existe - Terraform fará import automático
+  lifecycle {
+    # Não destruir o namespace mesmo se removido do código
+    prevent_destroy = false
+    # Ignora mudanças em labels/annotations feitas por outros sistemas
+    ignore_changes = [
+      metadata[0].annotations,
+    ]
   }
 
   depends_on = [aws_eks_node_group.main]
