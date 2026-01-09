@@ -105,3 +105,32 @@ output "nlb_target_group_arn" {
   description = "NLB Target Group ARN for NGINX Ingress"
   value       = aws_lb_target_group.nginx_ingress.arn
 }
+
+# ============================================
+# CloudWatch Outputs - Observabilidade
+# ============================================
+
+output "cloudwatch_dashboard_url" {
+  description = "URL do CloudWatch Dashboard"
+  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=TechChallenge-Dashboard"
+}
+
+output "cloudwatch_logs_url" {
+  description = "URL do CloudWatch Logs"
+  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#logsV2:log-groups"
+}
+
+output "eks_console_url" {
+  description = "URL do EKS Console"
+  value       = "https://${var.aws_region}.console.aws.amazon.com/eks/home?region=${var.aws_region}#/clusters/${var.cluster_name}"
+}
+
+output "cloudwatch_log_group_apps" {
+  description = "CloudWatch Log Group para aplicações"
+  value       = aws_cloudwatch_log_group.applications.name
+}
+
+output "cloudwatch_log_group_eks" {
+  description = "CloudWatch Log Group para EKS"
+  value       = aws_cloudwatch_log_group.eks_cluster.name
+}
