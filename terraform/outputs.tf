@@ -102,6 +102,6 @@ output "nlb_dns_name" {
 }
 
 output "nlb_target_group_arn" {
-  description = "NLB Target Group ARN for EKS services"
-  value       = aws_lb_target_group.eks_services.arn
+  description = "NLB Target Group ARN for NGINX Ingress"
+  value       = aws_lb_target_group.nginx_ingress.arn
 }

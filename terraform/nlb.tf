@@ -1,6 +1,7 @@
 # ============================================
 # Network Load Balancer para API Gateway -> EKS
 # Permite que o API Gateway acesse os serviços no EKS via VPC Link
+# Tráfego: API Gateway → NLB → NGINX Ingress Controller → Services
 # ============================================
 
 # Security Group para o NLB
@@ -16,6 +17,15 @@ resource "aws_security_group" "nlb" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "HTTP from API Gateway"
+  }
+
+  # Permitir tráfego para NodePort do NGINX Ingress
+  ingress {
+    from_port   = 30080
+    to_port     = 30080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "NodePort for NGINX Ingress HTTP"
   }
 
   # Permitir tráfego HTTPS
@@ -56,29 +66,29 @@ resource "aws_lb" "main" {
   }
 }
 
-# Target Group para os serviços do EKS (porta 80)
-resource "aws_lb_target_group" "eks_services" {
-  name        = "tech-challenge-eks-tg"
-  port        = 80
+# Target Group para NGINX Ingress Controller (NodePort 30080)
+resource "aws_lb_target_group" "nginx_ingress" {
+  name        = "tech-challenge-nginx-tg"
+  port        = 30080  # NodePort do NGINX Ingress
   protocol    = "TCP"
   vpc_id      = aws_vpc.main.id
-  target_type = "ip"
+  target_type = "instance"  # Targets são os nodes do EKS
 
   health_check {
     enabled             = true
     protocol            = "TCP"
-    port                = "traffic-port"
+    port                = "30080"
     healthy_threshold   = 2
     unhealthy_threshold = 2
     interval            = 30
   }
 
   tags = {
-    Name = "tech-challenge-eks-tg"
+    Name = "tech-challenge-nginx-tg"
   }
 }
 
-# Listener HTTP (porta 80)
+# Listener HTTP (porta 80) -> NGINX Ingress (NodePort 30080)
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
@@ -86,11 +96,34 @@ resource "aws_lb_listener" "http" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.eks_services.arn
+    target_group_arn = aws_lb_target_group.nginx_ingress.arn
   }
 }
 
-# Nota: Os targets (IPs dos pods) serão registrados automaticamente
-# pelo AWS Load Balancer Controller no EKS, ou manualmente via Terraform
-# se necessário. Para simplificar, o NLB está configurado para receber
-# IPs dos serviços Kubernetes.
+# Registrar os nodes do EKS como targets
+# Isso será feito automaticamente pelo AWS Load Balancer Controller
+# ou pode ser feito manualmente com aws_lb_target_group_attachment
+
+# Data source para pegar os nodes do EKS
+data "aws_instances" "eks_nodes" {
+  filter {
+    name   = "tag:eks:cluster-name"
+    values = [aws_eks_cluster.main.name]
+  }
+
+  filter {
+    name   = "instance-state-name"
+    values = ["running"]
+  }
+
+  depends_on = [aws_eks_node_group.main]
+}
+
+# Registrar cada node como target (dinâmico)
+resource "aws_lb_target_group_attachment" "eks_nodes" {
+  count            = length(data.aws_instances.eks_nodes.ids)
+  target_group_arn = aws_lb_target_group.nginx_ingress.arn
+  target_id        = data.aws_instances.eks_nodes.ids[count.index]
+  port             = 30080
+}
+
