@@ -107,29 +107,7 @@ resource "aws_lb_listener" "http" {
 }
 
 # Registrar os nodes do EKS como targets
-# Isso será feito automaticamente pelo AWS Load Balancer Controller
-# ou pode ser feito manualmente com aws_lb_target_group_attachment
-
-# Data source para pegar os nodes do EKS
-data "aws_instances" "eks_nodes" {
-  filter {
-    name   = "tag:eks:cluster-name"
-    values = [aws_eks_cluster.main.name]
-  }
-
-  filter {
-    name   = "instance-state-name"
-    values = ["running"]
-  }
-
-  depends_on = [aws_eks_node_group.main]
-}
-
-# Registrar cada node como target (dinâmico)
-resource "aws_lb_target_group_attachment" "eks_nodes" {
-  count            = length(data.aws_instances.eks_nodes.ids)
-  target_group_arn = aws_lb_target_group.nginx_ingress.arn
-  target_id        = data.aws_instances.eks_nodes.ids[count.index]
-  port             = 30080
-}
+# NOTA: O registro é feito via script após o deploy do Terraform
+# porque o count dinâmico não funciona com data sources que dependem de recursos
+# O workflow do GitHub Actions executa o registro após terraform apply
 
