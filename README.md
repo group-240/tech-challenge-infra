@@ -25,6 +25,9 @@ Repositório responsável pela infraestrutura base da AWS.
 
 1. Executar **bootstrap** primeiro (cria S3 + DynamoDB para state)
 2. Depois executar o **main** (VPC, EKS, ECR)
+3. Bancos de dados
+4. Gateway
+5. Microserviços em paralelo
 
 ## Outputs
 
