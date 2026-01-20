@@ -13,56 +13,57 @@ resource "aws_cloudwatch_log_group" "eks_cluster" {
   }
 }
 
-# Log Group para logs das aplicações (pods)
-resource "aws_cloudwatch_log_group" "applications" {
-  name              = "/tech-challenge/applications"
+# ============================================
+# Container Insights Log Groups
+# NOTA: O addon amazon-cloudwatch-observability cria estes automaticamente,
+# mas declaramos aqui para controlar a retenção e garantir que existam.
+# ============================================
+
+# Log Group para logs das aplicações (pods) - Container Insights
+resource "aws_cloudwatch_log_group" "container_insights_application" {
+  name              = "/aws/containerinsights/${var.cluster_name}/application"
   retention_in_days = 7
 
   tags = {
-    Name        = "tech-challenge-app-logs"
+    Name        = "tech-challenge-container-insights-app"
     Environment = var.environment
+    Source      = "container-insights"
   }
 }
 
-# Log Group específico para cada microserviço
-resource "aws_cloudwatch_log_group" "customer_service" {
-  name              = "/tech-challenge/customer-service"
+# Log Group para logs do dataplane - Container Insights
+resource "aws_cloudwatch_log_group" "container_insights_dataplane" {
+  name              = "/aws/containerinsights/${var.cluster_name}/dataplane"
   retention_in_days = 7
 
   tags = {
-    Name    = "customer-service-logs"
-    Service = "customer"
+    Name        = "tech-challenge-container-insights-dataplane"
+    Environment = var.environment
+    Source      = "container-insights"
   }
 }
 
-resource "aws_cloudwatch_log_group" "orders_service" {
-  name              = "/tech-challenge/orders-service"
+# Log Group para logs do host - Container Insights
+resource "aws_cloudwatch_log_group" "container_insights_host" {
+  name              = "/aws/containerinsights/${var.cluster_name}/host"
   retention_in_days = 7
 
   tags = {
-    Name    = "orders-service-logs"
-    Service = "orders"
+    Name        = "tech-challenge-container-insights-host"
+    Environment = var.environment
+    Source      = "container-insights"
   }
 }
 
-resource "aws_cloudwatch_log_group" "payments_service" {
-  name              = "/tech-challenge/payments-service"
+# Log Group para métricas de performance - Container Insights
+resource "aws_cloudwatch_log_group" "container_insights_performance" {
+  name              = "/aws/containerinsights/${var.cluster_name}/performance"
   retention_in_days = 7
 
   tags = {
-    Name    = "payments-service-logs"
-    Service = "payments"
-  }
-}
-
-# Log Group para API Gateway
-resource "aws_cloudwatch_log_group" "api_gateway" {
-  name              = "/tech-challenge/api-gateway"
-  retention_in_days = 7
-
-  tags = {
-    Name    = "api-gateway-logs"
-    Service = "api-gateway"
+    Name        = "tech-challenge-container-insights-performance"
+    Environment = var.environment
+    Source      = "container-insights"
   }
 }
 
@@ -195,7 +196,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         }
       },
 
-      # Logs recentes - Customer
+      # Logs recentes - Aplicações
       {
         type   = "log"
         x      = 0
@@ -203,7 +204,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         width  = 24
         height = 6
         properties = {
-          query  = "SOURCE '/tech-challenge/applications' | fields @timestamp, @message | sort @timestamp desc | limit 50"
+          query  = "SOURCE '/aws/containerinsights/${var.cluster_name}/application' | fields @timestamp, @message, kubernetes.container_name | filter kubernetes.namespace_name = 'tech-challenge' | sort @timestamp desc | limit 50"
           region = var.aws_region
           title  = "📋 Logs Recentes das Aplicações"
         }
