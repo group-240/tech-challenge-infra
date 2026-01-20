@@ -133,7 +133,7 @@ output "eks_console_url" {
 
 output "cloudwatch_log_group_apps" {
   description = "CloudWatch Log Group para aplicações (Container Insights)"
-  value       = aws_cloudwatch_log_group.container_insights_application.name
+  value       = data.aws_cloudwatch_log_group.container_insights_application.name
 }
 
 output "cloudwatch_log_group_eks" {
@@ -143,5 +143,5 @@ output "cloudwatch_log_group_eks" {
 
 output "cloudwatch_log_group_performance" {
   description = "CloudWatch Log Group para métricas de performance"
-  value       = aws_cloudwatch_log_group.container_insights_performance.name
+  value       = data.aws_cloudwatch_log_group.container_insights_performance.name
 }
