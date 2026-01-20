@@ -432,8 +432,8 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
     namespace = kubernetes_namespace.tech_challenge.metadata[0].name  # Usa referência, não string!
     annotations = {
       "kubernetes.io/ingress.class"                = "nginx"
-      "nginx.ingress.kubernetes.io/rewrite-target" = "/api$1"
       "nginx.ingress.kubernetes.io/ssl-redirect"   = "false"
+      "nginx.ingress.kubernetes.io/use-regex"      = "true"
     }
   }
 
@@ -445,8 +445,8 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
       http {
         # Health check - vai para orders
         path {
-          path      = "/api/health"
-          path_type = "Prefix"
+          path      = "/api/health(/|$)(.*)"
+          path_type = "ImplementationSpecific"
           backend {
             service {
               name = "orders"
@@ -459,8 +459,8 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
 
         # Categories - vai para orders
         path {
-          path      = "/api/categories"
-          path_type = "Prefix"
+          path      = "/api/categories(/|$)(.*)"
+          path_type = "ImplementationSpecific"
           backend {
             service {
               name = "orders"
@@ -473,8 +473,8 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
 
         # Products - vai para orders
         path {
-          path      = "/api/products"
-          path_type = "Prefix"
+          path      = "/api/products(/|$)(.*)"
+          path_type = "ImplementationSpecific"
           backend {
             service {
               name = "orders"
@@ -487,8 +487,8 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
 
         # Orders - vai para orders
         path {
-          path      = "/api/orders"
-          path_type = "Prefix"
+          path      = "/api/orders(/|$)(.*)"
+          path_type = "ImplementationSpecific"
           backend {
             service {
               name = "orders"
@@ -501,8 +501,8 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
 
         # Webhooks - vai para orders
         path {
-          path      = "/api/webhooks"
-          path_type = "Prefix"
+          path      = "/api/webhooks(/|$)(.*)"
+          path_type = "ImplementationSpecific"
           backend {
             service {
               name = "orders"
@@ -515,8 +515,8 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
 
         # Customers - vai para customer
         path {
-          path      = "/api/customers"
-          path_type = "Prefix"
+          path      = "/api/customers(/|$)(.*)"
+          path_type = "ImplementationSpecific"
           backend {
             service {
               name = "customer"
@@ -529,8 +529,22 @@ resource "kubernetes_ingress_v1" "tech_challenge" {
 
         # Payments - vai para payments
         path {
-          path      = "/api/payments"
-          path_type = "Prefix"
+          path      = "/api/payments(/|$)(.*)"
+          path_type = "ImplementationSpecific"
+          backend {
+            service {
+              name = "payments"
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+
+        # Payment (singular) - webhook do Mercado Pago
+        path {
+          path      = "/api/payment(/|$)(.*)"
+          path_type = "ImplementationSpecific"
           backend {
             service {
               name = "payments"
