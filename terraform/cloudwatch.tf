@@ -55,6 +55,17 @@ resource "aws_cloudwatch_log_group" "payments_service" {
   }
 }
 
+# Log Group para API Gateway
+resource "aws_cloudwatch_log_group" "api_gateway" {
+  name              = "/tech-challenge/api-gateway"
+  retention_in_days = 7
+
+  tags = {
+    Name    = "api-gateway-logs"
+    Service = "api-gateway"
+  }
+}
+
 # ============================================
 # CloudWatch Dashboard - Visão Unificada
 # ============================================
