@@ -15,56 +15,36 @@ resource "aws_cloudwatch_log_group" "eks_cluster" {
 
 # ============================================
 # Container Insights Log Groups
-# NOTA: O addon amazon-cloudwatch-observability cria estes automaticamente,
-# mas declaramos aqui para controlar a retenção e garantir que existam.
+# NOTA: Estes são criados automaticamente pelo addon amazon-cloudwatch-observability
+# Usamos data sources para referenciá-los (não criar novos)
 # ============================================
 
-# Log Group para logs das aplicações (pods) - Container Insights
-resource "aws_cloudwatch_log_group" "container_insights_application" {
-  name              = "/aws/containerinsights/${var.cluster_name}/application"
-  retention_in_days = 7
+# Referência ao Log Group de aplicações (criado pelo Container Insights)
+data "aws_cloudwatch_log_group" "container_insights_application" {
+  name = "/aws/containerinsights/${var.cluster_name}/application"
 
-  tags = {
-    Name        = "tech-challenge-container-insights-app"
-    Environment = var.environment
-    Source      = "container-insights"
-  }
+  depends_on = [aws_eks_addon.cloudwatch_observability]
 }
 
-# Log Group para logs do dataplane - Container Insights
-resource "aws_cloudwatch_log_group" "container_insights_dataplane" {
-  name              = "/aws/containerinsights/${var.cluster_name}/dataplane"
-  retention_in_days = 7
+# Referência ao Log Group de dataplane (criado pelo Container Insights)
+data "aws_cloudwatch_log_group" "container_insights_dataplane" {
+  name = "/aws/containerinsights/${var.cluster_name}/dataplane"
 
-  tags = {
-    Name        = "tech-challenge-container-insights-dataplane"
-    Environment = var.environment
-    Source      = "container-insights"
-  }
+  depends_on = [aws_eks_addon.cloudwatch_observability]
 }
 
-# Log Group para logs do host - Container Insights
-resource "aws_cloudwatch_log_group" "container_insights_host" {
-  name              = "/aws/containerinsights/${var.cluster_name}/host"
-  retention_in_days = 7
+# Referência ao Log Group de host (criado pelo Container Insights)
+data "aws_cloudwatch_log_group" "container_insights_host" {
+  name = "/aws/containerinsights/${var.cluster_name}/host"
 
-  tags = {
-    Name        = "tech-challenge-container-insights-host"
-    Environment = var.environment
-    Source      = "container-insights"
-  }
+  depends_on = [aws_eks_addon.cloudwatch_observability]
 }
 
-# Log Group para métricas de performance - Container Insights
-resource "aws_cloudwatch_log_group" "container_insights_performance" {
-  name              = "/aws/containerinsights/${var.cluster_name}/performance"
-  retention_in_days = 7
+# Referência ao Log Group de performance (criado pelo Container Insights)
+data "aws_cloudwatch_log_group" "container_insights_performance" {
+  name = "/aws/containerinsights/${var.cluster_name}/performance"
 
-  tags = {
-    Name        = "tech-challenge-container-insights-performance"
-    Environment = var.environment
-    Source      = "container-insights"
-  }
+  depends_on = [aws_eks_addon.cloudwatch_observability]
 }
 
 # ============================================
