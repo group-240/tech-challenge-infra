@@ -15,37 +15,9 @@ resource "aws_cloudwatch_log_group" "eks_cluster" {
 
 # ============================================
 # Container Insights Log Groups
-# NOTA: Estes são criados automaticamente pelo addon amazon-cloudwatch-observability
-# Usamos data sources para referenciá-los (não criar novos)
+# NOTA: Criados automaticamente pelo addon amazon-cloudwatch-observability
+# Não precisam ser referenciados no Terraform - existem quando os pods iniciam
 # ============================================
-
-# Referência ao Log Group de aplicações (criado pelo Container Insights)
-data "aws_cloudwatch_log_group" "container_insights_application" {
-  name = "/aws/containerinsights/${var.cluster_name}/application"
-
-  depends_on = [aws_eks_addon.cloudwatch_observability]
-}
-
-# Referência ao Log Group de dataplane (criado pelo Container Insights)
-data "aws_cloudwatch_log_group" "container_insights_dataplane" {
-  name = "/aws/containerinsights/${var.cluster_name}/dataplane"
-
-  depends_on = [aws_eks_addon.cloudwatch_observability]
-}
-
-# Referência ao Log Group de host (criado pelo Container Insights)
-data "aws_cloudwatch_log_group" "container_insights_host" {
-  name = "/aws/containerinsights/${var.cluster_name}/host"
-
-  depends_on = [aws_eks_addon.cloudwatch_observability]
-}
-
-# Referência ao Log Group de performance (criado pelo Container Insights)
-data "aws_cloudwatch_log_group" "container_insights_performance" {
-  name = "/aws/containerinsights/${var.cluster_name}/performance"
-
-  depends_on = [aws_eks_addon.cloudwatch_observability]
-}
 
 # ============================================
 # CloudWatch Dashboard - Visão Unificada
