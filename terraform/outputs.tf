@@ -110,17 +110,7 @@ output "eks_console_url" {
   value       = "https://${var.aws_region}.console.aws.amazon.com/eks/home?region=${var.aws_region}#/clusters/${var.cluster_name}"
 }
 
-output "cloudwatch_log_group_apps" {
-  description = "CloudWatch Log Group para aplicações (Container Insights)"
-  value       = data.aws_cloudwatch_log_group.container_insights_application.name
-}
-
 output "cloudwatch_log_group_eks" {
   description = "CloudWatch Log Group para EKS"
   value       = aws_cloudwatch_log_group.eks_cluster.name
-}
-
-output "cloudwatch_log_group_performance" {
-  description = "CloudWatch Log Group para métricas de performance"
-  value       = data.aws_cloudwatch_log_group.container_insights_performance.name
 }

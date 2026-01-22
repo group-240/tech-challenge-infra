@@ -9,8 +9,7 @@ Internet
     ↓
 ┌─────────────────────────────────────────┐
 │         API GATEWAY (REST)              │
-│   - Autenticação Cognito               │
-│   - Lambda Authorizer (CPF)            │
+│   - Lambda Validator (CPF format)      │
 │   - Rate Limiting                      │
 └─────────────────┬───────────────────────┘
                   │ VPC Link
@@ -104,14 +103,12 @@ Internet
 │                    │   /categories, /health        │                              │
 │                    └───────────────────────────────┘                              │
 │                              │                                                     │
-│                    ┌─────────┴─────────┐                                          │
-│                    │                   │                                          │
-│                    ▼                   ▼                                          │
-│           ┌───────────────┐   ┌───────────────┐                                   │
-│           │    COGNITO    │   │    LAMBDA     │                                   │
-│           │  User Pool    │   │  CPF Auth     │                                   │
-│           │  Authorizer   │   │  Function     │                                   │
-│           └───────────────┘   └───────────────┘                                   │
+│                              ▼                                          │
+│                    ┌───────────────┐                                   │
+│                    │    LAMBDA     │                                   │
+│                    │  CPF Format   │                                   │
+│                    │  Validator    │                                   │
+│                    └───────────────┘                                   │
 │                                                                                    │
 │  📦 Repositório: tech-challenge-gateway                                           │
 │  📁 State: gateway/terraform.tfstate                                              │
@@ -192,10 +189,10 @@ Internet
 
 | Repositório | Recursos AWS | State File | Dependências |
 |-------------|--------------|------------|--------------|
-| **tech-challenge-infra** | VPC, Subnets, EKS, ECR, Cognito, NLB | `infra/terraform.tfstate` | Nenhuma (base) |
+| **tech-challenge-infra** | VPC, Subnets, EKS, ECR, NLB | `infra/terraform.tfstate` | Nenhuma (base) |
 | **tech-challenge-rds** | RDS PostgreSQL, DB Subnet Group, Security Groups | `rds/terraform.tfstate` | infra (VPC, Subnets) |
 | **tech-challenge-dynamoDB** | DynamoDB Tables | `dynamodb/terraform.tfstate` | Nenhuma |
-| **tech-challenge-gateway** | API Gateway, Lambda, VPC Link | `gateway/terraform.tfstate` | infra (Cognito, NLB) |
+| **tech-challenge-gateway** | API Gateway, Lambda, VPC Link | `gateway/terraform.tfstate` | infra (NLB) |
 | **tech-challenge-customer** | K8s Deployment, Service | `customer/terraform.tfstate` | infra (EKS, ECR), dynamoDB |
 | **tech-challenge-orders** | K8s Deployment, Service, Secret | `orders/terraform.tfstate` | infra (EKS, ECR), rds |
 | **tech-challenge-payments** | K8s Deployment, Service, Secret | `payments/terraform.tfstate` | infra (EKS, ECR), dynamoDB |
