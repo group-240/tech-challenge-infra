@@ -9,8 +9,7 @@ Internet
     ↓
 ┌─────────────────────────────────────────┐
 │         API GATEWAY (REST)              │
-│   - Autenticação Cognito               │
-│   - Lambda Authorizer (CPF)            │
+│   - Lambda Validator (CPF format)      │
 │   - Rate Limiting                      │
 └─────────────────┬───────────────────────┘
                   │ VPC Link

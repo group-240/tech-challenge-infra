@@ -115,14 +115,12 @@ curl -X POST "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/a
 ```json
 {
   "success": true,
-  "message": "Cliente identificado com sucesso",
-  "cpf": "12345678901",
-  "token": "eyJzdWIiOiIxMjM0NTY3ODkwMSIs...",
-  "expiresIn": 3600
+  "message": "CPF validado com sucesso",
+  "cpf": "12345678901"
 }
 ```
 
-> **📝 Nota:** Guarde o `token` para usar nas próximas requisições autenticadas.
+> **📝 Nota:** O CPF é validado no formato, mas não requer autenticação para usar a API.
 
 ---
 
@@ -205,10 +203,9 @@ curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/products/
 #### 3.1 Criar pedido (Combo personalizado)
 
 ```bash
-# POST /orders (Requer autenticação)
+# POST /orders
 curl -X POST "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {token}" \
   -d '{
     "cpf": "12345678901",
     "items": [
@@ -272,10 +269,9 @@ curl -X POST "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/o
 #### 4.1 Criar ordem de pagamento (gera QR Code)
 
 ```bash
-# POST /payments (Requer autenticação)
+# POST /payments
 curl -X POST "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/payments" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {token}" \
   -d '{
     "amount": 53.90,
     "description": "Pedido #1001 - Tech Challenge Fast Food",
@@ -312,8 +308,7 @@ O campo `qrCodeBase64` contém a imagem do QR Code em Base64. Exiba no totem par
 
 ```bash
 # GET /payments/{paymentId}
-curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/payments/1325737896" \
-  -H "Authorization: Bearer {token}"
+curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/payments/1325737896"
 ```
 
 **Resposta (aguardando):**
@@ -363,9 +358,8 @@ Quando o pagamento é confirmado, o MercadoPago envia automaticamente uma notifi
 #### 6.1 Consultar status do pedido
 
 ```bash
-# GET /orders/{orderId} (Requer autenticação)
-curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders/1001" \
-  -H "Authorization: Bearer {token}"
+# GET /orders/{orderId}
+curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders/1001"
 ```
 
 **Estados possíveis do pedido:**
@@ -382,17 +376,15 @@ curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders/10
 #### 6.2 Listar todos os pedidos (Admin/Cozinha)
 
 ```bash
-# GET /orders (Requer autenticação)
-curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders" \
-  -H "Authorization: Bearer {token}"
+# GET /orders
+curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders"
 ```
 
 #### 6.3 Filtrar pedidos por status (Painel da Cozinha)
 
 ```bash
 # GET /orders?status=IN_PREPARATION
-curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders?status=IN_PREPARATION" \
-  -H "Authorization: Bearer {token}"
+curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders?status=IN_PREPARATION"
 ```
 
 ---
@@ -403,8 +395,7 @@ curl "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders?st
 
 ```bash
 # PUT /orders/{orderId}/status/preparation
-curl -X PUT "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders/1001/status/preparation" \
-  -H "Authorization: Bearer {token}"
+curl -X PUT "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders/1001/status/preparation"
 ```
 
 #### 7.2 Marcar pedido como pronto
@@ -413,7 +404,6 @@ curl -X PUT "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/or
 # PUT /orders/{orderId}/status
 curl -X PUT "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders/1001/status" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {token}" \
   -d '{
     "status": "READY"
   }'
@@ -429,7 +419,6 @@ curl -X PUT "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/or
 # PUT /orders/{orderId}/status
 curl -X PUT "https://{api-gateway-id}.execute-api.us-east-1.amazonaws.com/dev/orders/1001/status" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {token}" \
   -d '{
     "status": "COMPLETED"
   }'
@@ -451,12 +440,10 @@ curl -X POST "$API_URL/customers" \
   -H "Content-Type: application/json" \
   -d '{"name":"Cliente Teste","email":"teste@email.com","cpf":"'$CPF'"}'
 
-# 2. Autenticar por CPF
-TOKEN=$(curl -s -X POST "$API_URL/auth/cpf" \
+# 2. Autenticar por CPF (apenas validação de formato)
+curl -s -X POST "$API_URL/auth/cpf" \
   -H "Content-Type: application/json" \
-  -d '{"cpf":"'$CPF'"}' | jq -r '.token')
-
-echo "Token: $TOKEN"
+  -d '{"cpf":"'$CPF'"}'
 
 # 3. Ver cardápio
 curl "$API_URL/categories"
@@ -465,7 +452,6 @@ curl "$API_URL/products"
 # 4. Criar pedido
 ORDER=$(curl -s -X POST "$API_URL/orders" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
   -d '{"cpf":"'$CPF'","items":[{"productId":"prod-001","quantity":1}]}')
 
 ORDER_ID=$(echo $ORDER | jq -r '.id')
@@ -474,11 +460,10 @@ echo "Pedido criado: $ORDER_ID"
 # 5. Criar pagamento
 curl -X POST "$API_URL/payments" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
   -d '{"amount":25.90,"description":"Pedido #'$ORDER_ID'","paymentMethodId":"pix","installments":1,"payerEmail":"teste@email.com","identificationType":"CPF","identificationNumber":"'$CPF'"}'
 
 # 6. Acompanhar pedido
-curl "$API_URL/orders/$ORDER_ID" -H "Authorization: Bearer $TOKEN"
+curl "$API_URL/orders/$ORDER_ID"
 ```
 
 ---
@@ -512,21 +497,23 @@ curl "$API_URL/orders/$ORDER_ID" -H "Authorization: Bearer $TOKEN"
 | Endpoint | Método | Autenticação |
 |----------|--------|--------------|
 | `/auth/cpf` | POST | ❌ Não |
-| `/categories` | GET | ❌ Não |
-| `/products` | GET | ❌ Não |
-| `/health` | GET | ❌ Não |
-| `/webhooks` | POST | ❌ Não |
-| `/customers` | POST | ❌ Não |
-| `/customers` | GET | ✅ Cognito JWT |
-| `/orders` | GET/POST | ✅ Cognito JWT |
-| `/payments` | POST | ✅ Cognito JWT |
+| `/categories` | GET | ❌ Público |
+| `/products` | GET | ❌ Público |
+| `/health` | GET | ❌ Público |
+| `/webhooks` | POST | ❌ Público |
+| `/customers` | POST | ❌ Público |
+| `/customers` | GET | ❌ Público |
+| `/orders` | GET/POST | ❌ Público |
+| `/payments` | POST | ❌ Público |
+
+> **⚠️ Nota:** Todas as rotas são públicas. A API não requer autenticação.
 
 ---
 
 ## ❓ FAQ
 
-### Como obter o token de autenticação?
-Use o endpoint `POST /auth/cpf` com um CPF válido cadastrado.
+### O CPF é obrigatório para fazer pedidos?
+Não. A identificação por CPF é opcional e serve apenas para validação de formato no Lambda.
 
 ### O que acontece se o pagamento não for confirmado?
 O pedido permanece com status `PENDING` e não é enviado para a cozinha.
