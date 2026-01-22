@@ -33,6 +33,17 @@ resource "aws_security_group" "eks_cluster" {
   }
 }
 
+# Security Group Rule para permitir tráfego do NLB para NodePort do NGINX Ingress
+resource "aws_security_group_rule" "eks_nodes_ingress_nlb" {
+  type              = "ingress"
+  from_port         = 30080
+  to_port           = 30080
+  protocol          = "tcp"
+  cidr_blocks       = [var.vpc_cidr]
+  security_group_id = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+  description       = "Allow NLB to access NGINX Ingress NodePort"
+}
+
 # EKS Cluster - Usando LabRole do Learner Lab
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
